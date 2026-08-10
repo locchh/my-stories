@@ -1,7 +1,8 @@
 import DOMPurify from 'dompurify'
 import { marked } from 'marked'
-import { lessons } from './data'
-import type { Lesson, VocabularyEntry } from './types'
+import { lessons, loadLesson } from './data'
+import { paginate, paginationItems } from './pagination'
+import type { Lesson, LessonSummary, VocabularyEntry } from './types'
 import './style.css'
 
 const app = getAppRoot()
@@ -18,6 +19,8 @@ const sourceLabels = {
 const allTags = Array.from(
   new Set(lessons.flatMap((lesson) => lesson.metadata.tags)),
 ).sort((a, b) => a.localeCompare(b))
+
+const STORIES_PER_PAGE = 12
 
 function getAppRoot(): HTMLDivElement {
   const element = document.querySelector<HTMLDivElement>('#app')
@@ -48,19 +51,18 @@ function getElement<T extends HTMLElement>(id: string): T {
   return element as T
 }
 
-function storyPath(lesson: Lesson): string {
+function storyPath(lesson: LessonSummary): string {
   return `/stories/${encodeURIComponent(lesson.id)}/`
 }
 
-function lessonFromPath(): Lesson | undefined {
+function lessonIdFromPath(): string | undefined {
   const match = window.location.pathname.match(/^\/stories\/([^/]+)\/?$/)
   if (!match) return undefined
 
-  const id = decodeURIComponent(match[1])
-  return lessons.find((lesson) => lesson.id === id)
+  return decodeURIComponent(match[1])
 }
 
-function randomLesson(excludeId?: string): Lesson {
+function randomLesson(excludeId?: string): LessonSummary {
   const alternatives = lessons.filter((lesson) => lesson.id !== excludeId)
   const pool = alternatives.length > 0 ? alternatives : lessons
   return pool[Math.floor(Math.random() * pool.length)]
@@ -78,7 +80,7 @@ function brandMarkup(): string {
   `
 }
 
-function sourceMarkup(lesson: Lesson): string {
+function sourceMarkup(lesson: LessonSummary): string {
   const { source } = lesson.metadata
   const creator = source.creator ? `<span>${escapeHtml(source.creator)}</span>` : ''
   const reference = source.reference ? `<small>${escapeHtml(source.reference)}</small>` : ''
@@ -103,8 +105,11 @@ function sourceMarkup(lesson: Lesson): string {
 
 function renderHome(): void {
   document.title = 'My Stories — Learn words in context'
-  const requestedTag = new URLSearchParams(window.location.search).get('tag')
+  const searchParams = new URLSearchParams(window.location.search)
+  const requestedTag = searchParams.get('tag')
+  const requestedPage = Number.parseInt(searchParams.get('page') ?? '1', 10)
   let activeTag = allTags.find((tag) => normalize(tag) === normalize(requestedTag ?? '')) ?? ''
+  let currentPage = Number.isFinite(requestedPage) && requestedPage > 0 ? requestedPage : 1
 
   app.innerHTML = `
     <header class="topbar home-topbar">
@@ -156,15 +161,15 @@ function renderHome(): void {
           `).join('')}
         </div>
 
-        <div id="story-grid" class="story-grid">
-          ${lessons.map(storyCardMarkup).join('')}
-        </div>
+        <div id="story-grid" class="story-grid"></div>
 
         <div id="empty-library" class="library-empty" hidden>
           <span aria-hidden="true">○</span>
           <h3>No stories found</h3>
           <p>Try searching for another title, word, meaning, or part of speech.</p>
         </div>
+
+        <nav id="pagination" class="pagination" aria-label="Story pages" hidden></nav>
       </section>
 
       <section class="method-banner">
@@ -185,72 +190,104 @@ function renderHome(): void {
   const emptyLibrary = getElement<HTMLElement>('empty-library')
   const visibleStoryCount = getElement<HTMLElement>('visible-story-count')
   const tagFilters = getElement<HTMLElement>('tag-filters')
+  const pagination = getElement<HTMLElement>('pagination')
 
-  function applyLibraryFilters(): void {
-    const query = normalize(search.value)
-    let visible = 0
-
-    storyGrid.querySelectorAll<HTMLElement>('.story-preview').forEach((card) => {
-      const tags = (card.dataset.tags ?? '').split('|')
-      const matchesSearch = !query || normalize(card.dataset.search ?? '').includes(query)
-      const matchesTag = !activeTag || tags.includes(normalize(activeTag))
-      const matches = matchesSearch && matchesTag
-      card.hidden = !matches
-      if (matches) visible += 1
-    })
-
-    visibleStoryCount.textContent = `${visible} ${visible === 1 ? 'story' : 'stories'}`
-    emptyLibrary.hidden = visible !== 0
+  function syncLibraryUrl(): void {
+    const url = new URL(window.location.href)
+    if (activeTag) url.searchParams.set('tag', activeTag)
+    else url.searchParams.delete('tag')
+    if (currentPage > 1) url.searchParams.set('page', String(currentPage))
+    else url.searchParams.delete('page')
+    window.history.replaceState({}, '', url)
   }
 
-  search.addEventListener('input', applyLibraryFilters)
+  function lessonMatchesSearch(lesson: LessonSummary, query: string): boolean {
+    if (!query) return true
+
+    const searchable = [
+      lesson.id,
+      lesson.metadata.title,
+      lesson.metadata.description,
+      lesson.metadata.source.title,
+      lesson.metadata.source.creator ?? '',
+      ...lesson.metadata.tags,
+      ...lesson.vocabulary.flatMap((entry) => [
+        entry.word,
+        entry.meaning,
+        entry.partOfSpeech,
+      ]),
+    ].join(' ')
+
+    return normalize(searchable).includes(query)
+  }
+
+  function applyLibraryFilters(updateUrl = false): void {
+    const query = normalize(search.value)
+    const matchingLessons = lessons.filter((lesson) => {
+      const matchesTag = !activeTag || lesson.metadata.tags.some(
+        (tag) => normalize(tag) === normalize(activeTag),
+      )
+      return matchesTag && lessonMatchesSearch(lesson, query)
+    })
+    const page = paginate(matchingLessons, currentPage, STORIES_PER_PAGE)
+    currentPage = page.currentPage
+
+    storyGrid.innerHTML = page.items.map(storyCardMarkup).join('')
+    visibleStoryCount.textContent = `${matchingLessons.length} ${matchingLessons.length === 1 ? 'story' : 'stories'}`
+    emptyLibrary.hidden = matchingLessons.length !== 0
+    pagination.hidden = matchingLessons.length === 0 || page.totalPages === 1
+    pagination.innerHTML = paginationMarkup(currentPage, page.totalPages)
+
+    if (updateUrl) syncLibraryUrl()
+  }
+
+  search.addEventListener('input', () => {
+    currentPage = 1
+    applyLibraryFilters(true)
+  })
 
   tagFilters.addEventListener('click', (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-tag]')
     if (!button) return
 
     activeTag = button.dataset.tag ?? ''
+    currentPage = 1
     tagFilters.querySelectorAll<HTMLButtonElement>('[data-tag]').forEach((tagButton) => {
       const selected = (tagButton.dataset.tag ?? '') === activeTag
       tagButton.classList.toggle('active', selected)
       tagButton.setAttribute('aria-pressed', String(selected))
     })
 
-    const url = new URL(window.location.href)
-    if (activeTag) url.searchParams.set('tag', activeTag)
-    else url.searchParams.delete('tag')
-    window.history.replaceState({}, '', url)
-    applyLibraryFilters()
+    applyLibraryFilters(true)
+  })
+
+  pagination.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-page]')
+    if (!button || button.disabled) return
+
+    const page = Number.parseInt(button.dataset.page ?? '', 10)
+    if (!Number.isFinite(page) || page < 1 || page === currentPage) return
+
+    currentPage = page
+    applyLibraryFilters(true)
+    document.querySelector('.story-library-heading')?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
   })
 
   getElement<HTMLButtonElement>('random-story').addEventListener('click', () => {
     window.location.href = storyPath(randomLesson())
   })
 
-  applyLibraryFilters()
+  applyLibraryFilters(true)
 }
 
-function storyCardMarkup(lesson: Lesson): string {
-  const searchable = [
-    lesson.id,
-    lesson.metadata.title,
-    lesson.metadata.description,
-    lesson.metadata.source.title,
-    lesson.metadata.source.creator ?? '',
-    ...lesson.metadata.tags,
-    ...lesson.vocabulary.flatMap((entry) => [
-      entry.word,
-      entry.meaning,
-      entry.partOfSpeech,
-    ]),
-  ].join(' ')
-
+function storyCardMarkup(lesson: LessonSummary): string {
   return `
     <a
       class="story-preview"
       href="${storyPath(lesson)}"
-      data-search="${escapeHtml(searchable)}"
-      data-tags="${escapeHtml(lesson.metadata.tags.map(normalize).join('|'))}"
     >
       <span class="story-preview-topline">
         <span>Lesson ${escapeHtml(lesson.id)}</span>
@@ -275,6 +312,37 @@ function storyCardMarkup(lesson: Lesson): string {
         <strong>Read story <i aria-hidden="true">→</i></strong>
       </span>
     </a>
+  `
+}
+
+function paginationMarkup(currentPage: number, totalPages: number): string {
+  const items = paginationItems(currentPage, totalPages)
+
+  return `
+    <button
+      class="pagination-direction"
+      type="button"
+      data-page="${currentPage - 1}"
+      ${currentPage === 1 ? 'disabled' : ''}
+    ><span aria-hidden="true">←</span> Previous</button>
+    <span class="pagination-pages">
+      ${items.map((item) => item === 'ellipsis'
+        ? '<span class="pagination-ellipsis" aria-hidden="true">…</span>'
+        : `
+          <button
+            type="button"
+            data-page="${item}"
+            aria-label="Page ${item}"
+            ${item === currentPage ? 'class="active" aria-current="page"' : ''}
+          >${item}</button>
+        `).join('')}
+    </span>
+    <button
+      class="pagination-direction"
+      type="button"
+      data-page="${currentPage + 1}"
+      ${currentPage === totalPages ? 'disabled' : ''}
+    >Next <span aria-hidden="true">→</span></button>
   `
 }
 
@@ -382,7 +450,7 @@ function renderReader(lesson: Lesson): void {
   setupVocabularyInteractions(lesson, story)
 }
 
-function navigationMarkup(lesson: Lesson, direction: string): string {
+function navigationMarkup(lesson: LessonSummary, direction: string): string {
   return `
     <a href="${storyPath(lesson)}" class="story-navigation-link ${direction.toLowerCase()}">
       <small>${escapeHtml(direction)} story</small>
@@ -574,10 +642,12 @@ function highlightVocabulary(container: HTMLElement, entries: VocabularyEntry[])
   }
 }
 
-const lesson = lessonFromPath()
+const lessonId = lessonIdFromPath()
 
-if (lesson) {
-  renderReader(lesson)
+if (lessonId) {
+  const lesson = await loadLesson(lessonId)
+  if (lesson) renderReader(lesson)
+  else renderHome()
 } else {
   renderHome()
 }

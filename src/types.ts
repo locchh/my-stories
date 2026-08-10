@@ -28,9 +28,12 @@ export interface VocabularyEntry {
   example?: string
 }
 
-export interface Lesson {
+export interface LessonSummary {
   id: string
   metadata: LessonMetadata
-  story: string
   vocabulary: VocabularyEntry[]
+}
+
+export interface Lesson extends LessonSummary {
+  story: string
 }

@@ -1,4 +1,4 @@
-import type { Lesson, LessonMetadata, VocabularyEntry } from './types'
+import type { Lesson, LessonMetadata, LessonSummary, VocabularyEntry } from './types'
 
 const metadataModules = import.meta.glob('../data/*/metadata.json', {
   eager: true,
@@ -6,10 +6,9 @@ const metadataModules = import.meta.glob('../data/*/metadata.json', {
 }) as Record<string, LessonMetadata>
 
 const storyModules = import.meta.glob('../data/*/story.md', {
-  eager: true,
   query: '?raw',
   import: 'default',
-}) as Record<string, string>
+}) as Record<string, () => Promise<string>>
 
 const vocabularyModules = import.meta.glob('../data/*/vocabulary.json', {
   eager: true,
@@ -31,7 +30,7 @@ function fileForLesson<T>(modules: Record<string, T>, id: string): T | undefined
   return entry?.[1]
 }
 
-function validateLesson(lesson: Lesson): void {
+function validateLessonSummary(lesson: LessonSummary): void {
   if (!lesson.metadata.title || !lesson.metadata.description) {
     throw new Error(`Lesson ${lesson.id} needs a title and description in metadata.json`)
   }
@@ -53,10 +52,6 @@ function validateLesson(lesson: Lesson): void {
     throw new Error(`Lesson ${lesson.id} contains duplicate tags in metadata.json`)
   }
 
-  if (!lesson.story.trim()) {
-    throw new Error(`Lesson ${lesson.id} has an empty story.md`)
-  }
-
   for (const [index, entry] of lesson.vocabulary.entries()) {
     if (!entry.word || !entry.partOfSpeech || !entry.meaning) {
       throw new Error(`Lesson ${lesson.id} has an invalid vocabulary entry at index ${index}`)
@@ -66,24 +61,36 @@ function validateLesson(lesson: Lesson): void {
 
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' })
 
-export const lessons: Lesson[] = Object.entries(metadataModules)
+export const lessons: LessonSummary[] = Object.entries(metadataModules)
   .map(([path, metadata]) => {
     const id = lessonIdFromPath(path)
-    const story = fileForLesson(storyModules, id)
     const vocabulary = fileForLesson(vocabularyModules, id)
+    const storyLoader = fileForLesson(storyModules, id)
 
-    if (story === undefined || vocabulary === undefined) {
+    if (storyLoader === undefined || vocabulary === undefined) {
       throw new Error(
         `Lesson ${id} must contain metadata.json, story.md, and vocabulary.json`,
       )
     }
 
-    const lesson = { id, metadata, story, vocabulary }
-    validateLesson(lesson)
+    const lesson = { id, metadata, vocabulary }
+    validateLessonSummary(lesson)
     return lesson
   })
   .sort((a, b) => collator.compare(a.id, b.id))
 
 if (lessons.length === 0) {
   throw new Error('No lessons found in data/')
+}
+
+export async function loadLesson(id: string): Promise<Lesson | undefined> {
+  const summary = lessons.find((lesson) => lesson.id === id)
+  const storyLoader = fileForLesson(storyModules, id)
+
+  if (!summary || !storyLoader) return undefined
+
+  const story = await storyLoader()
+  if (!story.trim()) throw new Error(`Lesson ${id} has an empty story.md`)
+
+  return { ...summary, story }
 }

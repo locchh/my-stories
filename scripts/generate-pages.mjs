@@ -5,6 +5,8 @@ import { marked } from 'marked'
 const projectRoot = process.cwd()
 const dataRoot = join(projectRoot, 'data')
 const outputRoot = join(projectRoot, 'dist')
+const storiesPerPage = 12
+const siteUrl = (process.env.SITE_URL ?? 'https://my-stories-gamma.vercel.app').replace(/\/$/, '')
 const template = await readFile(join(outputRoot, 'index.html'), 'utf8')
 const lessonDirectories = (await readdir(dataRoot, { withFileTypes: true }))
   .filter((entry) => entry.isDirectory())
@@ -60,7 +62,7 @@ function homeFallback() {
           <span>${lessons.length} stories</span>
         </div>
         <div class="story-grid">
-          ${lessons.map((lesson) => `
+          ${lessons.slice(0, storiesPerPage).map((lesson) => `
             <a class="story-preview" href="/stories/${encodeURIComponent(lesson.id)}/">
               <span class="story-preview-topline"><span>Lesson ${escapeHtml(lesson.id)}</span><span>${escapeHtml(lesson.metadata.source.type)}</span></span>
               <span class="story-tags">${lesson.metadata.tags.map((tag) => `<span>#${escapeHtml(tag)}</span>`).join('')}</span>
@@ -126,4 +128,17 @@ for (const lesson of lessons) {
   await writeFile(join(storyDirectory, 'index.html'), page)
 }
 
-console.log(`Generated the library and ${lessons.length} standalone story pages.`)
+const sitemap = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${siteUrl}/</loc></url>
+${lessons.map((lesson) => `  <url><loc>${siteUrl}/stories/${encodeURIComponent(lesson.id)}/</loc></url>`).join('\n')}
+</urlset>
+`
+
+await writeFile(join(outputRoot, 'sitemap.xml'), sitemap)
+await writeFile(
+  join(outputRoot, 'robots.txt'),
+  `User-agent: *\nAllow: /\nSitemap: ${siteUrl}/sitemap.xml\n`,
+)
+
+console.log(`Generated the library, sitemap, and ${lessons.length} standalone story pages.`)
