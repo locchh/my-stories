@@ -1,0 +1,50 @@
+[
+  {
+    "word": "convenience",
+    "partOfSpeech": "noun",
+    "meaning": "sự tiện lợi, thuận tiện",
+    "example": "The city offered the convenience of having everything nearby."
+  },
+  {
+    "word": "comfort",
+    "partOfSpeech": "noun",
+    "meaning": "sự thoải mái, dễ chịu",
+    "example": "Quiet surroundings gave him a sense of comfort."
+  },
+  {
+    "word": "trade-off",
+    "partOfSpeech": "noun",
+    "meaning": "sự đánh đổi giữa hai điều không thể có cùng lúc",
+    "example": "Living far from the city involved a trade-off between peace and access."
+  },
+  {
+    "word": "arithmetic",
+    "partOfSpeech": "noun",
+    "meaning": "phép tính số học; sự tính toán đơn giản",
+    "example": "He treated the decision as a kind of arithmetic."
+  },
+  {
+    "word": "queue",
+    "partOfSpeech": "noun",
+    "meaning": "hàng người hoặc xe đang chờ",
+    "example": "Cars formed a queue at the entrance to the neighbourhood."
+  },
+  {
+    "word": "resource",
+    "partOfSpeech": "noun",
+    "meaning": "tài nguyên, nguồn lực",
+    "example": "Quiet had become a limited shared resource."
+  },
+  {
+    "word": "positional good",
+    "partOfSpeech": "noun phrase",
+    "meaning": "hàng hóa có giá trị phụ thuộc vào việc ít người sở hữu nó",
+    "example": "A peaceful street can become a positional good."
+  },
+  {
+    "word": "exchange rate",
+    "partOfSpeech": "noun phrase",
+    "meaning": "tỷ giá; mức quy đổi giữa hai giá trị",
+    "example": "He found an exchange rate between convenience and quiet that he could accept."
+  }
+]
