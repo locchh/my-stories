@@ -1,0 +1,12 @@
+{
+  "title": "A First Impression",
+  "description": "Two quiet neighbours learn how easily a first impression can become an unfair conclusion.",
+  "tags": ["relationships", "first impressions", "literature"],
+  "source": {
+    "type": "book",
+    "title": "Pride and Prejudice",
+    "creator": "Jane Austen",
+    "url": "https://www.gutenberg.org/ebooks/1342",
+    "reference": "Inspired by the novel's theme of mistaken first impressions"
+  }
+}

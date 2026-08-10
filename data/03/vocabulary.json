@@ -1,0 +1,32 @@
+[
+  {
+    "word": "reserved",
+    "partOfSpeech": "adjective",
+    "meaning": "kín đáo, ít nói",
+    "example": "Daniel seemed reserved at neighbourhood gatherings."
+  },
+  {
+    "word": "prejudice",
+    "partOfSpeech": "noun",
+    "meaning": "định kiến, thành kiến",
+    "example": "Her prejudice was based on incomplete information."
+  },
+  {
+    "word": "misinterpret",
+    "partOfSpeech": "verb",
+    "meaning": "hiểu sai, diễn giải sai",
+    "example": "It is easy to misinterpret a quiet person's behaviour."
+  },
+  {
+    "word": "gracious",
+    "partOfSpeech": "adjective",
+    "meaning": "tử tế, nhã nhặn",
+    "example": "He left a gracious note beside the parcel."
+  },
+  {
+    "word": "acquaintance",
+    "partOfSpeech": "noun",
+    "meaning": "người quen",
+    "example": "A short conversation turned the stranger into an acquaintance."
+  }
+]

@@ -1,0 +1,32 @@
+[
+  {
+    "word": "retain",
+    "partOfSpeech": "verb",
+    "meaning": "ghi nhớ; giữ lại",
+    "example": "A meaningful story can help you retain new vocabulary."
+  },
+  {
+    "word": "context",
+    "partOfSpeech": "noun",
+    "meaning": "ngữ cảnh, bối cảnh",
+    "example": "The story gives every new word a context."
+  },
+  {
+    "word": "deliberate",
+    "partOfSpeech": "adjective",
+    "meaning": "có chủ ý, có cân nhắc",
+    "example": "Active recall requires deliberate effort."
+  },
+  {
+    "word": "encounter",
+    "partOfSpeech": "noun",
+    "meaning": "lần bắt gặp; cuộc gặp gỡ",
+    "example": "Every encounter with the word makes it more familiar."
+  },
+  {
+    "word": "fluency",
+    "partOfSpeech": "noun",
+    "meaning": "sự trôi chảy",
+    "example": "Regular speaking practice improves fluency."
+  }
+]
