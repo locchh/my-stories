@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="My Stories">
+  <path
+    d="M7 15.5c8.8-2.6 17.2-.8 25 5.1v32c-7.8-5.9-16.2-7.7-25-5.1v-32Z"
+    fill="#fff"
+    stroke="#28594a"
+    stroke-linejoin="round"
+    stroke-width="2.5"
+  />
+  <path
+    d="M57 15.5c-8.8-2.6-17.2-.8-25 5.1v32c7.8-5.9 16.2-7.7 25-5.1v-32Z"
+    fill="#fff"
+    stroke="#28594a"
+    stroke-linejoin="round"
+    stroke-width="2.5"
+  />
+  <path d="M32 20.6v32" fill="none" stroke="#28594a" stroke-linecap="round" stroke-width="2.5" />
+  <path
+    d="M14 27c4.6-.7 8.7.1 12.5 2.4M14 34c4.6-.7 8.7.1 12.5 2.4M50 27c-4.6-.7-8.7.1-12.5 2.4"
+    fill="none"
+    stroke="#28594a"
+    stroke-linecap="round"
+    stroke-width="2.5"
+  />
+  <path d="M37.5 35.5c4.6-2 8.7-2.4 12.5-1.5" fill="none" stroke="#db704f" stroke-linecap="round" stroke-width="3" />
+  <path d="M37.5 42c4.6-2 8.7-2.4 12.5-1.5" fill="none" stroke="#f5d982" stroke-linecap="round" stroke-width="3" />
+</svg>
