@@ -1701,7 +1701,10 @@ body.drawer-open {
   }
 
   .home-hero h1 {
-    font-size: clamp(47px, 14vw, 70px);
+    max-width: 100%;
+    font-size: clamp(40px, 13vw, 56px);
+    line-height: .96;
+    text-wrap: balance;
   }
 
   .home-hero h1 br {

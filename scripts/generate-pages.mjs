@@ -53,7 +53,7 @@ function homeFallback() {
     <main class="home-page static-page">
       <section class="home-hero">
         <p class="eyebrow">Read · Notice · Remember</p>
-        <h1>Words make more sense<br />inside a story.</h1>
+        <h1>Words make more sense<br /> inside a story.</h1>
         <p>Short English stories built from vocabulary found in videos, articles, and books.</p>
       </section>
       <section class="story-library" aria-labelledby="static-library-title">

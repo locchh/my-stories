@@ -133,7 +133,7 @@ function renderHome(): void {
     <main class="home-page">
       <section class="home-hero">
         <p class="eyebrow">Read · Notice · Remember</p>
-        <h1>Words make more sense<br />inside a story.</h1>
+        <h1>Words make more sense<br /> inside a story.</h1>
         <p>
           Explore short stories built from vocabulary found in videos, articles, and books.
           Click a highlighted word whenever you need its meaning.
