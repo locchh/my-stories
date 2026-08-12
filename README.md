@@ -44,7 +44,9 @@ vocabulary into that page's HTML, so search engines and AI tools can read it dir
 The library displays 12 cards per page and keeps the current page and tag in the URL, such as
 `/?tag=environment&page=2`. Text searches and tag changes return to the first matching page. Story
 Markdown is loaded only when its standalone page is opened, keeping the main library bundle small
-as the collection grows. Production builds also generate `sitemap.xml` for every story URL.
+as the collection grows. Select a card's vocabulary count to open an active-recall drawer without
+leaving the library, then select a word flashcard to reveal its part of speech and meaning.
+Production builds also generate `sitemap.xml` for every story URL.
 
 On a story page, the vocabulary sidebar is hidden by default. Select a highlighted word to open a
 small definition popover, or use the **Vocabulary** button to open the complete list.

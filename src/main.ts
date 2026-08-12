@@ -183,6 +183,27 @@ function renderHome(): void {
     </main>
 
     <footer><p>Learn the word. Meet it in a story. Use it until it stays.</p></footer>
+
+    <div id="recap-backdrop" class="drawer-backdrop" hidden></div>
+    <aside
+      id="vocabulary-recap-drawer"
+      class="vocabulary-drawer recap-drawer"
+      role="dialog"
+      aria-modal="true"
+      aria-hidden="true"
+      aria-labelledby="recap-drawer-title"
+      inert
+    >
+      <div class="drawer-header">
+        <div>
+          <p id="recap-story-label" class="eyebrow"></p>
+          <h2 id="recap-drawer-title">Vocabulary recap</h2>
+        </div>
+        <button id="close-recap" class="icon-button" type="button" aria-label="Close vocabulary recap">×</button>
+      </div>
+      <p class="recap-instructions">Choose a word to reveal its part of speech and meaning.</p>
+      <div id="recap-list" class="recap-list"></div>
+    </aside>
   `
 
   const search = getElement<HTMLInputElement>('library-search')
@@ -191,6 +212,12 @@ function renderHome(): void {
   const visibleStoryCount = getElement<HTMLElement>('visible-story-count')
   const tagFilters = getElement<HTMLElement>('tag-filters')
   const pagination = getElement<HTMLElement>('pagination')
+  const recapDrawer = getElement<HTMLElement>('vocabulary-recap-drawer')
+  const recapBackdrop = getElement<HTMLElement>('recap-backdrop')
+  const recapList = getElement<HTMLElement>('recap-list')
+  const recapStoryLabel = getElement<HTMLElement>('recap-story-label')
+  const closeRecapButton = getElement<HTMLButtonElement>('close-recap')
+  let recapTrigger: HTMLButtonElement | undefined
 
   function syncLibraryUrl(): void {
     const url = new URL(window.location.href)
@@ -276,6 +303,82 @@ function renderHome(): void {
     })
   })
 
+  function openVocabularyRecap(lesson: LessonSummary, trigger: HTMLButtonElement): void {
+    recapTrigger?.setAttribute('aria-expanded', 'false')
+    recapTrigger = trigger
+    recapTrigger.setAttribute('aria-expanded', 'true')
+    recapStoryLabel.textContent = `Story ${lesson.id} · ${lesson.metadata.title}`
+    recapList.innerHTML = lesson.vocabulary.map(recapFlashcardMarkup).join('')
+    recapDrawer.removeAttribute('inert')
+    recapDrawer.classList.add('open')
+    recapDrawer.setAttribute('aria-hidden', 'false')
+    recapBackdrop.hidden = false
+    document.body.classList.add('drawer-open')
+    window.setTimeout(() => closeRecapButton.focus(), 220)
+  }
+
+  function closeVocabularyRecap(restoreFocus = true): void {
+    if (recapDrawer.getAttribute('aria-hidden') === 'true') return
+
+    recapDrawer.classList.remove('open')
+    recapDrawer.setAttribute('aria-hidden', 'true')
+    recapDrawer.setAttribute('inert', '')
+    recapBackdrop.hidden = true
+    document.body.classList.remove('drawer-open')
+    recapTrigger?.setAttribute('aria-expanded', 'false')
+    if (restoreFocus) recapTrigger?.focus()
+  }
+
+  storyGrid.addEventListener('click', (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-recap-lesson-id]')
+    if (!button) return
+
+    const lesson = lessons.find((item) => item.id === button.dataset.recapLessonId)
+    if (lesson) openVocabularyRecap(lesson, button)
+  })
+
+  recapList.addEventListener('click', (event) => {
+    const flashcard = (event.target as HTMLElement).closest<HTMLButtonElement>('.recap-flashcard')
+    if (!flashcard) return
+
+    const revealed = flashcard.classList.toggle('revealed')
+    const front = flashcard.querySelector<HTMLElement>('.recap-flashcard-front')
+    const back = flashcard.querySelector<HTMLElement>('.recap-flashcard-back')
+    const word = flashcard.dataset.word ?? 'Word'
+    flashcard.setAttribute('aria-pressed', String(revealed))
+    flashcard.setAttribute(
+      'aria-label',
+      `${word}: ${revealed ? 'hide' : 'reveal'} part of speech and meaning`,
+    )
+    front?.setAttribute('aria-hidden', String(revealed))
+    back?.setAttribute('aria-hidden', String(!revealed))
+  })
+
+  closeRecapButton.addEventListener('click', () => closeVocabularyRecap())
+  recapBackdrop.addEventListener('click', () => closeVocabularyRecap())
+  recapDrawer.addEventListener('keydown', (event) => {
+    if (event.key !== 'Tab') return
+
+    const focusable = Array.from(
+      recapDrawer.querySelectorAll<HTMLElement>('button:not([disabled]), a[href]'),
+    )
+    const first = focusable[0]
+    const last = focusable.at(-1)
+    if (!first || !last) return
+
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  })
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') closeVocabularyRecap()
+  })
+
   getElement<HTMLButtonElement>('random-story').addEventListener('click', () => {
     window.location.href = storyPath(randomLesson())
   })
@@ -285,21 +388,18 @@ function renderHome(): void {
 
 function storyCardMarkup(lesson: LessonSummary): string {
   return `
-    <a
-      class="story-preview"
-      href="${storyPath(lesson)}"
-    >
+    <article class="story-preview">
       <span class="story-preview-topline">
-        <span>Lesson ${escapeHtml(lesson.id)}</span>
+        <span>Story ${escapeHtml(lesson.id)}</span>
         <span>${escapeHtml(sourceLabels[lesson.metadata.source.type])}</span>
       </span>
       <span class="story-tags" aria-label="Tags">
         ${lesson.metadata.tags.map((tag) => `<span>#${escapeHtml(tag)}</span>`).join('')}
       </span>
-      <span class="story-preview-body">
+      <a class="story-preview-body" href="${storyPath(lesson)}">
         <h3>${escapeHtml(lesson.metadata.title)}</h3>
         <p>${escapeHtml(lesson.metadata.description)}</p>
-      </span>
+      </a>
       <span class="word-chips" aria-label="Vocabulary">
         ${lesson.vocabulary
           .slice(0, 4)
@@ -308,10 +408,39 @@ function storyCardMarkup(lesson: LessonSummary): string {
         ${lesson.vocabulary.length > 4 ? `<span>+${lesson.vocabulary.length - 4}</span>` : ''}
       </span>
       <span class="story-preview-footer">
-        <span>${lesson.vocabulary.length} vocabulary words</span>
-        <strong>Read story <i aria-hidden="true">→</i></strong>
+        <button
+          class="vocabulary-recap-button"
+          type="button"
+          data-recap-lesson-id="${escapeHtml(lesson.id)}"
+          aria-controls="vocabulary-recap-drawer"
+          aria-expanded="false"
+          aria-label="Review ${lesson.vocabulary.length} vocabulary words from ${escapeHtml(lesson.metadata.title)}"
+        >${lesson.vocabulary.length} vocabulary words</button>
+        <a class="story-read-link" href="${storyPath(lesson)}">Read story <i aria-hidden="true">→</i></a>
       </span>
-    </a>
+    </article>
+  `
+}
+
+function recapFlashcardMarkup(entry: VocabularyEntry): string {
+  return `
+    <button
+      class="recap-flashcard"
+      type="button"
+      aria-pressed="false"
+      aria-label="${escapeHtml(entry.word)}: reveal part of speech and meaning"
+      data-word="${escapeHtml(entry.word)}"
+    >
+      <span class="recap-flashcard-inner">
+        <span class="recap-flashcard-face recap-flashcard-front" aria-hidden="false">
+          <strong>${escapeHtml(entry.word)}</strong>
+        </span>
+        <span class="recap-flashcard-face recap-flashcard-back" aria-hidden="true">
+          <span>${escapeHtml(entry.partOfSpeech)}</span>
+          <strong>${escapeHtml(entry.meaning)}</strong>
+        </span>
+      </span>
+    </button>
   `
 }
 

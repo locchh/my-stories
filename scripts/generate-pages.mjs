@@ -63,13 +63,25 @@ function homeFallback() {
         </div>
         <div class="story-grid">
           ${lessons.slice(0, storiesPerPage).map((lesson) => `
-            <a class="story-preview" href="/stories/${encodeURIComponent(lesson.id)}/">
-              <span class="story-preview-topline"><span>Lesson ${escapeHtml(lesson.id)}</span><span>${escapeHtml(lesson.metadata.source.type)}</span></span>
+            <article class="story-preview">
+              <span class="story-preview-topline"><span>Story ${escapeHtml(lesson.id)}</span><span>${escapeHtml(lesson.metadata.source.type)}</span></span>
               <span class="story-tags">${lesson.metadata.tags.map((tag) => `<span>#${escapeHtml(tag)}</span>`).join('')}</span>
-              <span class="story-preview-body"><h3>${escapeHtml(lesson.metadata.title)}</h3><p>${escapeHtml(lesson.metadata.description)}</p></span>
-              <span class="word-chips">${lesson.vocabulary.map((entry) => `<span>${escapeHtml(entry.word)}</span>`).join('')}</span>
-              <span class="story-preview-footer"><span>${lesson.vocabulary.length} vocabulary words</span><strong>Read story →</strong></span>
-            </a>
+              <a class="story-preview-body" href="/stories/${encodeURIComponent(lesson.id)}/"><h3>${escapeHtml(lesson.metadata.title)}</h3><p>${escapeHtml(lesson.metadata.description)}</p></a>
+              <span class="word-chips">
+                ${lesson.vocabulary.slice(0, 4).map((entry) => `<span>${escapeHtml(entry.word)}</span>`).join('')}
+                ${lesson.vocabulary.length > 4 ? `<span>+${lesson.vocabulary.length - 4}</span>` : ''}
+              </span>
+              <span class="story-preview-footer">
+                <button
+                  class="vocabulary-recap-button"
+                  type="button"
+                  data-recap-lesson-id="${escapeHtml(lesson.id)}"
+                  aria-expanded="false"
+                  aria-label="Review ${lesson.vocabulary.length} vocabulary words from ${escapeHtml(lesson.metadata.title)}"
+                >${lesson.vocabulary.length} vocabulary words</button>
+                <a class="story-read-link" href="/stories/${encodeURIComponent(lesson.id)}/">Read story →</a>
+              </span>
+            </article>
           `).join('')}
         </div>
       </section>
